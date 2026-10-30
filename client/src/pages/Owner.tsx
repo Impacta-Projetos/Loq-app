@@ -23,7 +23,7 @@ import {
   X,
 } from "lucide-react";
 
-type OwnerView = "overview" | "equipment" | "proposals" | "availability" | "payments";
+type OwnerView = "overview" | "equipment" | "proposals" | "availability" | "payments" | "indicators";
 type ProposalStatus = "Nova proposta" | "Em negociação" | "Aguardando cliente" | "Aceita" | "Recusada";
 
 type Equipment = {
@@ -105,7 +105,7 @@ function SideNav({ active, onNavigate, onBack, onSwitchProfile, pendingCount }: 
       <div className="nav-section-label">Gestão da operação</div>
       <nav>{operationItems.map(({ id, label, icon: Icon, count }) => <button className={`nav-item ${active === id ? "active" : ""}`} key={id} onClick={() => onNavigate(id)} aria-current={active === id ? "page" : undefined}><Icon size={18} /><span>{label}</span>{count ? <b>{count}</b> : null}</button>)}</nav>
       <div className="nav-section-label nav-spacer">Financeiro</div>
-      <nav><button className={`nav-item ${active === "payments" ? "active" : ""}`} onClick={() => onNavigate("payments")} aria-current={active === "payments" ? "page" : undefined}><WalletCards size={18} /><span>Pagamentos</span></button><button className="nav-item" onClick={() => toast.info("Indicadores", { description: "Os indicadores exibidos nesta demonstração são ilustrativos." })}><Gauge size={18} /><span>Indicadores</span></button></nav>
+      <nav><button className={`nav-item ${active === "payments" ? "active" : ""}`} onClick={() => onNavigate("payments")} aria-current={active === "payments" ? "page" : undefined}><WalletCards size={18} /><span>Pagamentos</span></button><button className={`nav-item ${active === "indicators" ? "active" : ""}`} onClick={() => onNavigate("indicators")} aria-current={active === "indicators" ? "page" : undefined}><Gauge size={18} /><span>Indicadores</span></button></nav>
       <div className="side-nav-bottom"><button className="back-to-client" onClick={onBack}><ArrowRight size={15} /> Voltar para área do cliente</button><button className="logout-link" onClick={onBack}><LogOut size={15} /> Sair</button><div className="security-note"><ShieldCheck size={17} /><span>Receba com segurança<br /><b>em cada locação</b></span></div></div>
     </aside>
   );
@@ -194,6 +194,20 @@ function PaymentList({ proposals }: { proposals: Proposal[] }) {
   return <div className="owner-panel owner-list-panel"><div className="panel-heading"><div><span className="eyebrow">Acompanhamento financeiro</span><h2>Pagamentos de locações</h2></div><WalletCards size={20} /></div>{accepted.length ? <div className="payment-list">{accepted.map((proposal) => <article className="payment-row" key={proposal.id}><div className="payment-icon"><WalletCards size={18} /></div><div><strong>{proposal.machine}</strong><span>{proposal.client} · {proposal.period}</span></div><strong className="payment-amount">{formatCurrency(proposal.value)}</strong><span className="payment-status"><span className="status-pip" /> Aguardando pagamento</span></article>)}</div> : <div className="empty-state owner-empty"><WalletCards size={25} /><h3>Nenhuma locação aceita</h3><p>Os pagamentos aparecerão aqui após a aceitação de uma proposta.</p></div>}<p className="owner-demo-note">O status é ilustrativo. A confirmação e liberação financeira serão conectadas ao pagamento seguro na próxima etapa.</p></div>;
 }
 
+function IndicatorsView({ equipment, proposals }: { equipment: Equipment[]; proposals: Proposal[] }) {
+  const accepted = proposals.filter((proposal) => proposal.status === "Aceita");
+  const revenue = accepted.reduce((total, proposal) => total + proposal.value, 0);
+  const occupancy = Math.round((equipment.reduce((total, item) => total + item.activeRentals, 0) / Math.max(1, equipment.length * 3)) * 100);
+  const monthlyBars = [62, 74, 58, 82, 69, 91, 78];
+  return <>
+    <section className="indicator-toolbar"><div><span className="eyebrow">Período analisado</span><strong>Últimos 30 dias</strong></div><button className="outline-button" onClick={() => toast.info("Período dos indicadores", { description: "Filtros por mês, trimestre e período personalizado estarão disponíveis com dados persistidos." })}><CalendarDays size={15} /> Alterar período</button></section>
+    <section className="metrics-grid indicators-metrics"><Metric label="Receita no período" value={formatCurrency(revenue || 18_420)} delta="12,8% vs. período anterior" icon={WalletCards} tone="green" /><Metric label="Taxa de ocupação" value={`${Math.min(occupancy || 78, 100)}%`} delta="4,2% vs. período anterior" icon={Gauge} tone="lime" /><Metric label="Propostas convertidas" value="68%" delta="+9,4% no período" icon={Check} tone="blue" /><Metric label="Nota média" value="4,9" delta="28 avaliações recebidas" icon={ShieldCheck} tone="purple" /></section>
+    <section className="indicator-grid"><div className="owner-panel indicator-panel"><div className="panel-heading"><div><span className="eyebrow">Evolução da receita</span><h2>Receita por semana</h2></div><span className="indicator-positive"><ArrowDownRight size={14} /> 12,8%</span></div><div className="bar-chart" aria-label="Gráfico de receita por semana">{monthlyBars.map((value, index) => <div className="bar-column" key={index}><div className="bar-value" style={{ height: `${value}%` }} title={`Semana ${index + 1}: ${value}%`} /><small>Sem {index + 1}</small></div>)}</div><div className="chart-caption"><span><i className="chart-dot current" /> Receita realizada</span><strong>{formatCurrency(revenue || 18_420)}</strong></div></div>
+      <div className="owner-panel indicator-panel"><div className="panel-heading"><div><span className="eyebrow">Desempenho da frota</span><h2>Ocupação por equipamento</h2></div><Truck size={20} color="var(--loq-green)" /></div><div className="fleet-indicator-list">{equipment.map((item) => { const percent = Math.min(100, item.activeRentals * 34 + 24); return <div className="fleet-indicator" key={item.id}><div><strong>{item.name}</strong><span>{item.activeRentals ? `${item.activeRentals} locações ativas` : "Disponível para locação"}</span></div><b>{percent}%</b><div className="indicator-track"><span style={{ width: `${percent}%` }} /></div></div>; })}</div><button className="text-action" onClick={() => toast.info("Gestão da frota", { description: "Acesse Meus equipamentos para atualizar valores e condições." })}>Gerenciar equipamentos <ArrowRight size={15} /></button></div></section>
+    <section className="owner-panel indicator-panel indicator-breakdown"><div className="panel-heading"><div><span className="eyebrow">Funil comercial</span><h2>Propostas e conversão</h2></div><button className="text-action" onClick={() => toast.info("Detalhamento do funil", { description: "O detalhamento por cliente e equipamento será conectado aos eventos reais." })}>Ver detalhamento <ArrowRight size={15} /></button></div><div className="funnel-grid"><div><span>Recebidas</span><strong>{proposals.length + 7}</strong><small>100% da base</small></div><div><span>Em negociação</span><strong>{proposals.filter((proposal) => proposal.status === "Em negociação").length + 2}</strong><small>68% respondidas</small></div><div><span>Aceitas</span><strong>{accepted.length + 4}</strong><small>Conversão de 42%</small></div><div><span>Recusadas</span><strong>{proposals.filter((proposal) => proposal.status === "Recusada").length + 1}</strong><small>Dentro da média</small></div></div></section>
+  </>;
+}
+
 export default function Owner() {
   const [, setLocation] = useLocation();
   const [activeView, setActiveView] = useState<OwnerView>("overview");
@@ -210,6 +224,7 @@ export default function Owner() {
     proposals: ["Propostas recebidas", "Negocie cada locação.", "Revise período, local e valor antes de responder ao cliente."],
     availability: ["Disponibilidade", "Organize a agenda da frota.", "Bloqueie períodos de manutenção ou indisponibilidade."],
     payments: ["Pagamentos", "Acompanhe seus recebimentos.", "Consulte o valor e o status das locações aceitas."],
+    indicators: ["Indicadores", "Entenda o desempenho da sua operação.", "Acompanhe receita, ocupação da frota e conversão de propostas."],
   }[activeView];
 
   const updateProposal = (id: string, status: ProposalStatus) => {
@@ -264,6 +279,7 @@ export default function Owner() {
       {activeView === "proposals" && <ProposalList proposals={proposals} onUpdate={updateProposal} onCounter={setCounterProposal} />}
       {activeView === "availability" && <AvailabilityPanel equipment={equipment} periods={blockedPeriods} onAddPeriod={addBlockedPeriod} onRemovePeriod={(id) => setBlockedPeriods((current) => current.filter((period) => period.id !== id))} />}
       {activeView === "payments" && <PaymentList proposals={proposals} />}
+      {activeView === "indicators" && <IndicatorsView equipment={equipment} proposals={proposals} />}
 
       <footer className="main-footer"><span>LOQ · Gestão inteligente de equipamentos</span><span>Dados demonstrativos desta sessão <span className="live-dot" /></span></footer>
     </main>
