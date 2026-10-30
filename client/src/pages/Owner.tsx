@@ -13,6 +13,7 @@ import {
   FileCheck2,
   Gauge,
   LayoutDashboard,
+  LogOut,
   Menu,
   Package,
   Plus,
@@ -105,7 +106,7 @@ function SideNav({ active, onNavigate, onBack, onSwitchProfile, pendingCount }: 
       <nav>{operationItems.map(({ id, label, icon: Icon, count }) => <button className={`nav-item ${active === id ? "active" : ""}`} key={id} onClick={() => onNavigate(id)} aria-current={active === id ? "page" : undefined}><Icon size={18} /><span>{label}</span>{count ? <b>{count}</b> : null}</button>)}</nav>
       <div className="nav-section-label nav-spacer">Financeiro</div>
       <nav><button className={`nav-item ${active === "payments" ? "active" : ""}`} onClick={() => onNavigate("payments")} aria-current={active === "payments" ? "page" : undefined}><WalletCards size={18} /><span>Pagamentos</span></button><button className="nav-item" onClick={() => toast.info("Indicadores", { description: "Os indicadores exibidos nesta demonstração são ilustrativos." })}><Gauge size={18} /><span>Indicadores</span></button></nav>
-      <div className="side-nav-bottom"><button className="back-to-client" onClick={onBack}><ArrowRight size={15} /> Voltar para área do cliente</button><div className="security-note"><ShieldCheck size={17} /><span>Receba com segurança<br /><b>em cada locação</b></span></div></div>
+      <div className="side-nav-bottom"><button className="back-to-client" onClick={onBack}><ArrowRight size={15} /> Voltar para área do cliente</button><button className="logout-link" onClick={onBack}><LogOut size={15} /> Sair</button><div className="security-note"><ShieldCheck size={17} /><span>Receba com segurança<br /><b>em cada locação</b></span></div></div>
     </aside>
   );
 }
